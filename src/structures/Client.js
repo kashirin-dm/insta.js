@@ -1,4 +1,4 @@
-const { withRealtime, withFbns } = require('instagram_mqtt')
+const { withRealtime, withFbns, GraphQLSubscriptions, SkywalkerSubscriptions } = require('instagram_mqtt')
 // const { GraphQLSubscriptions, SkywalkerSubscriptions } = require('instagram_mqtt/dist/realtime/subscriptions')
 const { IgApiClient } = require('instagram-private-api')
 const { EventEmitter } = require('events')
@@ -389,7 +389,25 @@ class Client extends EventEmitter {
         ig.realtime.on('close', () => console.error('RealtimeClient closed'))
 
         await ig.realtime.connect({
-            irisData: await ig.feed.directInbox().request()
+            // tests
+            graphQlSubs: [
+                // these are some subscriptions
+                GraphQLSubscriptions.getAppPresenceSubscription(),
+                GraphQLSubscriptions.getDirectStatusSubscription(),
+                GraphQLSubscriptions.getDirectTypingSubscription(ig.state.cookieUserId),
+                GraphQLSubscriptions.getAsyncAdSubscription(ig.state.cookieUserId)
+            ],
+            // optional
+            skywalkerSubs: [
+                SkywalkerSubscriptions.directSub(ig.state.cookieUserId),
+                SkywalkerSubscriptions.liveSub(ig.state.cookieUserId)
+            ],
+            irisData: await ig.feed.directInbox().request(),
+            socksOptions: {
+                type: 6,
+                port: proxy.port,
+                host: `http://${proxy.user}:${proxy.pass}@${proxy.host}`
+            }
         })
         // PartialObserver<FbnsNotificationUnknown>
         ig.fbns.push$.subscribe((data) => this.handleFbnsReceive(data))
